@@ -13,7 +13,7 @@ class PricelistItem(models.Model):
     _name = "product.pricelist.item"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'product.pricelist.item']
 
-    def _track_field_in_order(self,values,field):
+    def _track_field_in_pricelist(self,values,field):
         pricelists = self.mapped("pricelist_id")
         for pricelist in pricelists:
             if field == 'fixed_price':
@@ -31,7 +31,7 @@ class PricelistItem(models.Model):
 
     def write(self, values):
         if 'fixed_price' in values:
-            self._track_field_in_order(values,'fixed_price')
+            self._track_field_in_pricelist(values,'fixed_price')
         return super(PricelistItem,self).write(values)
 
     # Below is an other solution
