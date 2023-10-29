@@ -2,6 +2,7 @@
 
 from odoo import models, fields, api, _, tools
 from odoo.exceptions import ValidationError
+from odoo.tools import float_is_zero, float_compare
 
 # Change the field description in the log according to given language,this is necessary because some times
 # the description of the field is so technical or it is not relevant
@@ -14,12 +15,17 @@ class PricelistItem(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'product.pricelist.item']
 
     def _track_field_in_pricelist(self,values,field):
+        precision = self.env['decimal.precision'].precision_get('Product Price')
         pricelists = self.mapped("pricelist_id")
         for pricelist in pricelists:
             if field == 'fixed_price':
                 pricelist_items = self.filtered(lambda x: x.pricelist_id == pricelist)
+                update_item = False
                 msg = "<b>" + _("The Price has been updated.") + "</b><ul>"
                 for item in pricelist_items:
+                    if float_compare(getattr(item, field), values[field], precision_digits=precision) == 0:
+                        continue
+                    update_item = True
                     msg += "<li> %s: <br/>" % item.product_tmpl_id.display_name
                     msg += _(
                         "Price: %(old_price)s -> %(new_price)s",
@@ -27,7 +33,8 @@ class PricelistItem(models.Model):
                         new_price=values[field]
                     ) + "<br/>"
                 msg += "</ul>"
-                pricelist.message_post(body=msg)
+                if update_item:
+                    pricelist.message_post(body=msg)
 
     def write(self, values):
         if 'fixed_price' in values:
